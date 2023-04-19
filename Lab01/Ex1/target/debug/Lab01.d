@@ -1,0 +1,1 @@
+D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab01\Ex1\target\debug\Lab01.exe: D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab01\Ex1\main.rs
