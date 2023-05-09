@@ -46,7 +46,7 @@ impl Dir{
 
 impl FileSystem{
     fn new() -> Self {
-        let root_dir = Dir::new("D:/");
+        let root_dir = Dir::new("D:");
         return FileSystem { root : root_dir} 
     }
 
@@ -55,7 +55,7 @@ impl FileSystem{
         return  FileSystem {root : root_dir};
     }
 
-    fn search_parent(&mut self,path : Vec<&str>) -> Option<&mut Dir>{
+    fn search_parent(&mut self,path : Vec<String>) -> Option<&mut Dir>{
         let mut found=0;
         let mut curr_dir:&mut Dir = &mut (self.root);
         let mut index = 0;
@@ -70,7 +70,7 @@ impl FileSystem{
                 return Some(curr_dir);
             }
             //se siamo invece all'inizio del path e questo non inizia con D:/ allora ritorna errore
-           if dir != curr_dir.name && index== 0 {
+           else if dir != curr_dir.name && index== 0 {
                     println!("Directory non trovata in search_parent");
                     return None;
             //se siamo invece all'inizio del path e questo inizia con D:/ allora prosegui in avanti nel path
@@ -121,13 +121,12 @@ impl FileSystem{
         return None;
     }
 
-    fn mk_dir(&mut self,path : &str) -> Result<&mut Dir>{
-        println!("{:?}",path);
-        //PERCHE' NON FUNZIONAAAAAAA
-        let dire : Vec<&str> = path.split('/').collect();
-        let path_len = dire.len();
-        let directories = dire[0..path_len-1].to_vec();
-        let dir_name = directories[directories.len()-1];
+    fn mk_dir(&mut self,path :&str) -> Result<&mut Dir>{
+        let direc : Vec<String> = path.split('/').map(|f| f.to_string()).collect();
+        let path_len = direc.len();
+        let directories = direc[0..path_len].to_vec();
+        let dir_name = directories[path_len-1].clone();
+        println!("{:?}",dir_name);
         //ad es D:/a/b/c viene divisa in 'D:' ,'a' ,'b' e 'c'
         //usa una funzione di ricerca che partendo da FileSystem -> root vada a cercare lungo i figli di D: la cartella 'a', lungo i figli di 'a' cerca 'b' e così via
         
@@ -137,7 +136,7 @@ impl FileSystem{
         match parent_dir {
             None  => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in mk_dir"))),
             Some(parent_dir) => {
-                                        let dir = Dir::new(dir_name);
+                                        let dir = Dir::new(dir_name.as_str());
 
                                         parent_dir.children.push(Node::Dir(dir));
                                         let len = parent_dir.children.len();
@@ -154,9 +153,10 @@ impl FileSystem{
     }
 
     fn rm_dir(&mut self,path:&str) -> anyhow::Result<&Dir>{
-        let mut directories : Vec<&str> = path.split('/').collect();
-        directories = directories[1..directories.len()-1].to_vec();
-        let dir_name = directories[directories.len()-1];
+        let direc : Vec<String> = path.split('/').map(|f| f.to_string()).collect();
+        let path_len = direc.len();
+        let directories = direc[0..path_len].to_vec();
+        let dir_name = directories[path_len-1].clone();
 
         //trova il direttorio padre
         let parent_dir:&mut Dir = self.search_parent(directories).expect("Impossibile trovare il direttorio padre in rm_dir");
@@ -180,71 +180,71 @@ impl FileSystem{
 
     }
 
-    fn new_file(&mut self,path: &str, file: File) -> Result<&mut File> {
-        let mut directories : Vec<&str> = path.split('/').collect();
-        directories = directories[1..directories.len()-1].to_vec();
-        let file_name = directories[directories.len()-1];
-        //ad es D:/a/b/c viene divisa in 'D:' ,'a' ,'b' e 'c'
-        //usa una funzione di ricerca che partendo da FileSystem -> root vada a cercare lungo i figli di D: la cartella 'a', lungo i figli di 'a' cerca 'b' e così via
+    // fn new_file(&mut self,path: &str, file: File) -> Result<&mut File> {
+    //     let mut directories : Vec<&str> = path.split('/').collect();
+    //     directories = directories[1..directories.len()-1].to_vec();
+    //     let file_name = directories[directories.len()-1];
+    //     //ad es D:/a/b/c viene divisa in 'D:' ,'a' ,'b' e 'c'
+    //     //usa una funzione di ricerca che partendo da FileSystem -> root vada a cercare lungo i figli di D: la cartella 'a', lungo i figli di 'a' cerca 'b' e così via
         
-        //trova il direttorio padre
-        let parent_dir:Option<&mut Dir> = self.search_parent(directories);
+    //     //trova il direttorio padre
+    //     let parent_dir:Option<&mut Dir> = self.search_parent(directories);
 
-        match parent_dir {
-            None  => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file"))),
-            Some(parent_dir) => {
+    //     match parent_dir {
+    //         None  => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file"))),
+    //         Some(parent_dir) => {
                                         
 
-                                        parent_dir.children.push(Node::File(file));
-                                        let len = parent_dir.children.len();
-                                        //faccio tutto sto macello perchè voglio ritornare un puntatore alla zona di memoria del vettore non alla variabile nello scope corrente
-                                        match &mut parent_dir.children[len - 1] {
-                                            Node::File(file) => return Ok(file),
-                                            _ => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::Other, "Il node ricercato in new_file non è un file"))),
-                                        }
+    //                                     parent_dir.children.push(Node::File(file));
+    //                                     let len = parent_dir.children.len();
+    //                                     //faccio tutto sto macello perchè voglio ritornare un puntatore alla zona di memoria del vettore non alla variabile nello scope corrente
+    //                                     match &mut parent_dir.children[len - 1] {
+    //                                         Node::File(file) => return Ok(file),
+    //                                         _ => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::Other, "Il node ricercato in new_file non è un file"))),
+    //                                     }
                                         
-            }
-        };
+    //         }
+    //     };
         
-    }
+    // }
 
-    fn rm_file(&mut self,path:&str) -> anyhow::Result<&Dir>{
-        let mut directories : Vec<&str> = path.split('/').collect();
-        directories = directories[1..directories.len()-1].to_vec();
-        let file_name = directories[directories.len()-1];
+    // fn rm_file(&mut self,path:&str) -> anyhow::Result<&Dir>{
+    //     let mut directories : Vec<&str> = path.split('/').collect();
+    //     directories = directories[1..directories.len()-1].to_vec();
+    //     let file_name = directories[directories.len()-1];
 
-        //trova il direttorio padre
-        let parent_dir = self.search_parent(directories);
-        let mut index = 0;
+    //     //trova il direttorio padre
+    //     let parent_dir = self.search_parent(directories);
+    //     let mut index = 0;
 
-        match parent_dir {
-            None  => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file"))),
-            Some(parent_dir) => {
+    //     match parent_dir {
+    //         None  => return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file"))),
+    //         Some(parent_dir) => {
                                         
-                for child in &mut parent_dir.children {
+    //             for child in &mut parent_dir.children {
 
-                    match child{
-                        Node::File(file) => {
-                            if file.name == file_name{
-                                parent_dir.children.remove(index);
-                                return Ok(parent_dir);
-                            }
-                        }
-                        Node::Dir(_)=> continue 
-                    }
-                    index+=1;
-                }
-                return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file")));
+    //                 match child{
+    //                     Node::File(file) => {
+    //                         if file.name == file_name{
+    //                             parent_dir.children.remove(index);
+    //                             return Ok(parent_dir);
+    //                         }
+    //                     }
+    //                     Node::Dir(_)=> continue 
+    //                 }
+    //                 index+=1;
+    //             }
+    //             return Err(anyhow::Error::new(io::Error::new(io::ErrorKind::NotFound, "Directory non trovata in new_file")));
                                         
-            }
-        };
+    //         }
+    //     };
 
 
        
         
         
 
-    }
+    // }
 
 
 }
@@ -254,10 +254,13 @@ impl FileSystem{
 
 fn main() {
     let mut fs = FileSystem::new();
-    let mut new_dir = fs.mk_dir("D/first").unwrap();
-    let path = "D:/first/second";
-    let v : Vec<&str>= path.split('/').collect(); 
-    println!("{:?}",v);
-    new_dir = fs.mk_dir(path).unwrap();
     
+    let mut new_dir = fs.mk_dir("D:/first").unwrap();
+    new_dir = fs.mk_dir("D:/first/second").unwrap();
+    new_dir = fs.mk_dir("D:/first/second_2").unwrap();
+    new_dir = fs.mk_dir("D:/first/second/third").unwrap();
+    println!("{:?}",fs.root);
+
+    let root_dir = fs.rm_dir("D:/first/second");
+    println!("{:?}",fs.root);
 }
