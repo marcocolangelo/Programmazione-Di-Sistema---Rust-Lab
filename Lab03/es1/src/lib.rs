@@ -1,7 +1,7 @@
-
-//wrapper di permute
 pub mod libreria_ten{
     use std::collections::HashSet;
+
+    //wrapper di permute
     pub fn permutazioni(v: &Vec<i32>) -> Vec<Vec<i32>> {
         let mut perm = HashSet::new();
         permute(v, 0, &mut perm);

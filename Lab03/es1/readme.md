@@ -1,4 +1,4 @@
-## sequenza di operazioni elementari (somma,sottrazione, moltiplicazione e divisione) necessarie per ottenere 10, partendo da 5 numeri da a 9 casuali
+## Sequenza di operazioni elementari (somma,sottrazione, moltiplicazione e divisione) necessarie per ottenere 10, partendo da 5 numeri da a 9 casuali
 
 # Vincoli :
         - le cinque cifre sono comprese tra 0 e 9 e possono ripetersi
