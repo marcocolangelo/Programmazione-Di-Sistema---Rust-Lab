@@ -12,7 +12,7 @@ use std::sync::Mutex;
 pub fn thread_find_sol<'a>(
     sol: Arc<Mutex<Vec<(&'a Vec<i32>, Vec<&'a Vec<char>>)>>>,
     perm: Arc<Mutex<Vec<&'a Vec<i32>>>>,
-    dispositions: Arc<Mutex<Vec<&'a Vec<char>>>>,
+    dispositions: Arc<Mutex<&'a Vec<Vec<char>>>>,
 ) {
 
 
@@ -29,7 +29,7 @@ pub fn thread_find_sol<'a>(
         let mut d = dispositions.lock().unwrap();
 
 
-        for y in d.deref(){
+        for y in *d.deref(){
             //verifica se l'operazione ritorna 10 come risultato, in caso affermativo salva la soluzione nella tupla
             if is_ten(x,y) {
                 ys.push(y);
@@ -74,21 +74,21 @@ fn main() {
 
 
 //qui sotto comincia l'implementazione con i thread
-
+thread::scope(|s|{
     let shared_sol = Arc::new(Mutex::new(sol));
-    let shared_disp = Arc::new(Mutex::new(dispositions));
+    let shared_disp = Arc::new(Mutex::new(&dispositions));
 
     let mut threads = vec![];
 
     //mettiamo scope per assicurarci che il lifetime delle variabili non siano più lunghe di quelle dei thread 
-    thread::scope(|s|{
+   
         //verifica come sistemare la cosa di handles[i]
         for i in 1..n{
-            let shared_handles = Arc::new(Mutex::new(&handles[i]));
+            let shared_handles = Arc::new(Mutex::new(handles[i].iter().collect()));
 
             let mut arc_sol: Arc<Mutex<Vec<(&Vec<i32>, Vec<&Vec<char>>)>>> = shared_sol.clone(); 
             let mut arc_hand = shared_handles.clone();
-            let mut arc_disp: Arc<Mutex<Vec<Vec<char>>>> = shared_disp.clone();
+            let mut arc_disp: Arc<Mutex<&Vec<Vec<char>>>> = shared_disp.clone();
             threads.push(thread::spawn(move ||{
                 thread_find_sol(arc_sol, arc_hand, arc_disp)
             }));
