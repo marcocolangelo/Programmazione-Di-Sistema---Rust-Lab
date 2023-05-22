@@ -93,20 +93,20 @@
         return false;
     }
 
-    pub fn find_sol <'a> (sol : &mut Vec<(&'a Vec<i32>,Vec<&'a Vec<char>>)>, perm : &'a Vec<Vec<i32>>, dispositions: &'a Vec<Vec<char>>){
+    pub fn find_sol <'a> (sol : &mut Vec<(Vec<i32>,Vec<Vec<char>>)>, perm : &'a Vec<Vec<i32>>, dispositions: &'a Vec<Vec<char>>){
         for x in perm{
             let mut found = false;
             let mut ys = Vec::new();
             for y in dispositions{
                 //verifica se l'operazione ritorna 10 come risultato, in caso affermativo salva la soluzione nella tupla
-                if is_ten(x,y) {
-                    ys.push(y);
+                if is_ten(&x,&y) {
+                    ys.push(y.to_vec());
                     found = true;
                 }
             } 
             //questa gestione di sol è dovuta solo al fatto che la variabile è una tupla
             if found {
-                sol.push((x, ys));
+                sol.push((x.to_vec(), ys));
             }
         }
     }

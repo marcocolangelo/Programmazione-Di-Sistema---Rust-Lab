@@ -7,6 +7,7 @@ use crate::my_thread_mod::my_thread::*;
 use std::thread;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Instant;
 
 
 
@@ -14,7 +15,9 @@ use std::sync::Mutex;
 fn main() {
     let cifre = [2,7,2,2,1].to_vec();
     let elements = vec!['+', '-', '/', '*'];
-    let sol : Vec<(Vec<i32>,Vec<Vec<char>>)> = Vec::new();
+    let mut sol : Vec<(Vec<i32>,Vec<Vec<char>>)> = Vec::new();
+
+    //sembra però che la divisione in thread addirittura aumenti i tempi di esecuzione
     let n = 3;
     
 
@@ -28,7 +31,18 @@ fn main() {
 
 
     //questa funzione trova tutte le possibili soluzioni per arrivare a 10 dato un vettore di permutazioni ed un vettore di permutazioni
-    //find_sol(&mut sol,&perm,&dispositions);
+    let start = Instant::now();
+
+    find_sol(&mut sol,&perm,&dispositions);
+
+    let end = Instant::now();
+    let duration = end.duration_since(start);
+
+    for x in &sol{
+        println!("{:?}",x);
+    }
+
+    println!("Durata programma NO THREAD in millisecondi: {:?}",((duration.as_micros() as f32)/1000.0) );
 
     //divido le permutazioni (dunque il Vec<Vec<i32>>) in un vettore di vettori di permutazioni (cioè in un vettore Vec di chunck, percio Vec<Vec> di permutazioni e quindi Vec<Vec<Vec>>)
     let handles : Vec<Vec<Vec<i32>>>=  perm.chunks(chunk_size).map(|c| c.to_vec()).collect() ;
@@ -40,6 +54,8 @@ fn main() {
     let shared_disp: Arc<Mutex<Vec<Vec<char>>>> = Arc::new(Mutex::new(dispositions.clone()));
 
     let mut threads = vec![];
+
+    let now = Instant::now();
 
     for i in 1..n{
         let shared_handles = Arc::new(Mutex::new(handles[i].clone()));
@@ -61,9 +77,14 @@ fn main() {
     for t in threads { t.join().unwrap(); }
 
 
+    let end = Instant::now();
+
+    let duration = end.duration_since(now).as_micros();
+
     for x in &(*shared_sol_as_string.lock().unwrap()){
         println!("{:?}",x);
     }
 
+    println!("Durata programma CON THREAD in millisecondi: {:?}",((duration as f32)/1000.0) );
     
 }
