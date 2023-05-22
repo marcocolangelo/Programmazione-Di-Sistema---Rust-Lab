@@ -1,10 +1,13 @@
-mod my_thread;
+mod my_lib_mod;
+mod my_thread_mod;
+use crate::my_lib_mod::lib::*;
+use crate::my_thread_mod::my_thread::*;
+
 
 use std::thread;
-use es1::libreria_ten::*;
 use std::sync::Arc;
 use std::sync::Mutex;
-//use lib::my_threads::*;
+
 
 
 
@@ -49,8 +52,8 @@ fn main() {
         let arc_sol_as_string = shared_sol_as_string.clone();
 
         threads.push(thread::spawn(move ||{
-            my_thread::thread_find_sol(arc_sol, arc_hand, arc_disp);
-            my_thread::thread_sol_into_string(arc_sol_2,arc_sol_as_string);
+            thread_find_sol(arc_sol, arc_hand, arc_disp);
+            thread_sol_into_string(arc_sol_2,arc_sol_as_string);
         }));
     }
   
