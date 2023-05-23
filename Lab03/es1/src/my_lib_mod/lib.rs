@@ -125,7 +125,7 @@
 
     }
 
-    pub fn sol_into_string(sol : &Vec<(&Vec<i32>,Vec<&Vec<char>>)>) -> Vec<String>{
+    pub fn sol_into_string(sol : &Vec<(Vec<i32>,Vec<Vec<char>>)>) -> Vec<String>{
         
         let mut sol_as_string : Vec<String> = Vec::new();
         
