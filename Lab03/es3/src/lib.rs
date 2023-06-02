@@ -1,4 +1,4 @@
-use std::{option::Option, time::{SystemTime, UNIX_EPOCH}};
+use std::{option::Option, time::{SystemTime, UNIX_EPOCH}, cell::RefCell};
 
 #[derive(Debug)]
 pub enum FileType {
@@ -51,7 +51,7 @@ pub struct Filesystem {
 
 pub struct MatchResult<'a> {
     qs: Vec<&'a str>, //queries matchate che vanno applicate in OR
-    matched_nodes: Vec<&'a mut Node>,   //risultati delle queries, ora devi gestire anche riferimenti mutabili alle cartelle
+    matched_nodes: Vec<RefCell<&'a Node>>,   //risultati delle queries, ora devi gestire anche riferimenti mutabili alle cartelle
 }
 
 
@@ -196,38 +196,68 @@ impl Filesystem {
         None
     }
 
+//la funzione ritorna la somma della dimensione del contenuto dei file della cartella se n è una Dir, altrimenti direttamente
+    //la lunghezza del contenuto del file se n è File 
+    fn get_content (n : RefCell<&Node>) -> i32{
+        let node = n.borrow_mut();
+        match &*node {
+            Node::Dir(d) => {
+                if d.children.len() == 0{
+                    return 0;
+                }
+                d.children.iter().map(|nc| Filesystem::get_content(RefCell::new(nc))).sum()
+            }
+            Node::File(f) => {
+                f.content.len() as i32
+            }
+        }
+    }
+
 //wrapper per raccogliere le funzioni atte ad eseguire tutte le possibili queries
-    fn do_match<'a>(f: &File, qs: &'a[&'a str]) -> Option<Vec<&'a str>> {           
+    fn do_match<'a>(n: RefCell<&Node>, qs: &'a[&'a str]) -> Option<Vec<&'a str>> {           
         let mut matched = vec![];
+        let node = n.borrow_mut();
         for q in qs {               //affronta una richiesta alla volta
             let toks = q.split(":").collect::<Vec<&str>>(); //splitta la query in spezzoni TIPO della query e ARGOMENTO del comando
             let qtype = toks[0];
             let qval = toks[1];
             match qtype {
                 "name" => {         //se la query è "name:stringa"
-                    if f.name.contains(&qval) {
-                        matched.push(*q);
+                    match *node{
+                        Node::Dir(d) => if d.name.contains(&qval) {
+                            matched.push(*q);
+                        }
+                        Node::File(f) => if f.name.contains(&qval) {
+                            matched.push(*q);
                     }
-                },
+                        
+                    }
+                }
                 "content" => {
-                    let contenuto = f.content.windows(qval.as_bytes().len()).any(|w| w==qval.as_bytes());
-                    if contenuto{
-                        matched.push(*q);
+                    match *node{
+                        Node::File(f) => {
+                            let contenuto = f.content.windows(qval.as_bytes().len()).any(|w| w==qval.as_bytes());
+                            if contenuto{
+                                matched.push(*q);
+                            }
+                        }
+                        Node::Dir(_) => continue,
                     }
                 }
                 "larger" => {
-                    let size = f.content.len();
-                    if size > qval.parse().unwrap(){
+                    let sum = Filesystem::get_content(RefCell::new(&*node));
+                    if sum > qval.parse().unwrap(){
                         matched.push(*q);
                     }
+                    
                 }
                 "smaller" => {
-                    let size = f.content.len();
-                    if size < qval.parse().unwrap(){
+                    let sum = Filesystem::get_content(n.clone());
+                    if sum > qval.parse().unwrap(){
                         matched.push(*q);
                     }
                 }
-                
+
                 // TODO: add here other matches
                 _ => println!("'{}' unknown or unhandled qtype", qtype),
             }
@@ -246,28 +276,47 @@ impl Filesystem {
             matched_nodes: vec![],  //vettore di Nodi ritornati come risultati delle queries matchate
         };
 
-        let mut visits = vec![&mut self.root];          //vettore con riferimenti alle cartelle da visitare (inizia con root ovviamente)
+        let mut visits = vec![&self.root];          //vettore con riferimenti alle cartelle da visitare (inizia con root ovviamente)
         while let Some(d) = visits.pop() {                      //finchè c'è una cartella da visitare continua
-            for cc in d.children.iter_mut() {                       //usa iter_mut()  per iterare lungo tutti i figli della cartella correntemente in analisi
-                match cc {
-                    Node::Dir(ref mut x) => {           //se è una cartella non la trattare ma inseriscila nel vettore di cartelle da visitare
-                        visits.push(x);
-                    }
-                    Node::File(x) => {
-                        if let Some(matches) = Filesystem::do_match(x, qs){
+            for cc in d.children.iter() {                       //usa iter_mut()  per iterare lungo tutti i figli della cartella correntemente in analisi
+                //let ref_cc = RefCell::new(cc);
+                
+                    match cc {
+                        
+                        Node::Dir( x) => {
+                            if let Some(matches) = Filesystem::do_match(RefCell::new(cc), qs){
+                            for m in matches  {
+                                if !mr.qs.contains(&m) {        //verifica se questa query non è gia stata affrontata prima
+                                    mr.qs.push(m);                  //se no, inseriscila nel vettore
+                                }
+                            }
+                            mr.matched_nodes.push(RefCell::new(cc)); 
+                            visits.push(x);
+                            }else{
+                                visits.push(x);
+                            }
+                        }
+                        
+                        Node::File(_) => {
+                            if let Some(matches) = Filesystem::do_match(RefCell::new(cc), qs){
                             for m in matches {
                                 if !mr.qs.contains(&m) {        //verifica se questa query non è gia stata affrontata prima
                                     mr.qs.push(m);                  //se no, inseriscila nel vettore
                                 }
                             }
-                            mr.matched_nodes.push(cc);          //inserimento del Node trovato nel vettore di nodi del MatchResult
-                        };
+                            mr.matched_nodes.push(RefCell::new(cc));          //inserimento del Node trovato nel vettore di nodi del MatchResult
+                        
+                            }
+                         }
                     }
-                }
+                
+                    
             }
         }
         Some(mr)
     }
+        
+    
 
     pub fn print(&mut self) {
         let mut visits = vec![&mut self.root];
