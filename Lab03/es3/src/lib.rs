@@ -432,9 +432,9 @@ mod tests {
         let mr = fs.search(&["name:test"]).unwrap();
         assert_eq!(mr.qs.len(), 1);
         assert_eq!(mr.matched_nodes.len(), 2);
-        let mr = fs.search(&["name:nomatch"]).unwrap();
-        assert_eq!(mr.qs.len(), 0);
-        assert_eq!(mr.matched_nodes.len(), 0);
+        let mr = fs.search(&["name:home"]).unwrap();
+        assert_eq!(mr.qs.len(), 1);
+        assert_eq!(mr.matched_nodes.len(), 1);
 
     }
 
