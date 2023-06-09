@@ -9,7 +9,7 @@
 5) Serve perciò anche uno STATO (APERTA/CHIUSA) oltre al CONTATORE(K thread in attesa) 
 ****/
 
-use std::sync::{Mutex, Condvar,MutexGuard,LockResult};
+use std::{sync::{Mutex, Condvar,MutexGuard,LockResult,Arc}, thread, ops::Index};
 use crossbeam::channel::{bounded,Receiver,Sender};
 
 
@@ -90,14 +90,86 @@ impl CBchannel{
     }
 
     pub fn wait(&self,i:usize){
-        //invia un messaggio per ogni canale (ovvero 1 ad ogni thread)
+        //invia un messaggio per ogni canale (ovvero 1 msg ad ogni thread) usando tutti gli N Sender a disposizione
         for (c,_) in &self.channels{
             c.send(()).unwrap();
         }
 
-        let (_,r) = &self.channels[i]; //piazza il thread sul suo canale dedicato
+        let (_,r) = &self.channels[i]; //piazza il thread sul suo canale dedicato (usa quindi 1 solo Receiver)
        for _ in 0..self.channels.len(){     //aspetta che arrivi un numero di messaggi quanto è il numero di thread
             r.recv().unwrap();
         } 
     }   
 }
+
+/* IMPLEMENTAZIONE 3 - THREAD ADDIZIONALE COME MASTER + CANALI PER COMUNICARE */
+//possiamo usare N + 1 thread (il master) che deciderà se si può entrare/uscire dalla barriera
+//usiamo ancora 3 canali (uno per ogni thread da gestire). Ciascuno collegerà uno degli N thread al thread Master
+//diciamo che il Sender servirà per avviare il master ed il receiver per ricevere info da quest'ultimo
+pub struct CBthread<T>{
+    channels  : Vec<(Sender<T>,Receiver<T>)>
+}
+
+impl<'a,T> CBthread<T> where 
+T : Copy + 'static + Send + Default{
+    pub fn new(n : usize) -> Self{ //per ogni thread creiamo un sender ed un receiver
+        let mut threads_s = Vec::new();
+        let mut threads_r = Vec::new();
+         
+         //per ogni thread creiamo un sender ed un receiver
+        for _ in 0..n{
+            let (s,r) = bounded::<T>(1);
+            threads_s.push(s);      //MASTER userà questi sender per inviare msg ai thread 
+            threads_r.push(r);      //threads useranno questi receiver per ricevere
+        }
+        //creiamo il sender ed il receiver legati al  master
+        //thread useranno cloni di master_s per inviare al master
+            //e MASTER userà un master_r per ricevere risposte dai thread
+        let (master_s, master_r)  = bounded::<T>(n);
+       
+   
+        //il thread dovrà usare il messaggio inviato da ciascun thread per identificare quest'ultimo e decidere il da farsi
+        thread::spawn(move ||{
+            //ovviamente il thread è sempre in ascolto, ecco perchè il loop
+            loop{
+                //se c'è un messaggio da trasportare salva in results
+                let mut results = Vec::new();
+                //master attende arrivo del msg da ciascun thread
+                for _i in 0..n{
+                    //verifica che trasmissione andata a buon fine
+                    match master_r.recv(){
+                        Ok(res) => {
+                            results.push(res);
+                        }
+                        Err(_) => {
+                            println!("Errore nel receiver del master!");
+                            return;
+                        }
+                    }
+                }
+                
+                //invia una risposta a ciascun thread
+                for s in threads_s.iter(){
+                    s.send(T::default());
+                }
+            }
+            
+        });
+
+        let mut barriers = Vec::new(); 
+        for i in 0..n{
+            barriers.push((master_s.clone(),threads_r.pop().unwrap()));
+        }
+        
+        CBthread { channels:barriers }
+    }
+
+    pub fn wait(&self,index :usize,obj :T ) -> T {
+        match self.channels[index].0.send(obj){
+            Err(_) => println!("error"),
+            _ =>  println!("")
+        }
+        return self.channels[index].1.recv().unwrap();
+    }
+}
+

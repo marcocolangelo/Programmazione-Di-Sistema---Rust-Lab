@@ -1,0 +1,1 @@
+D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab03\es3\target\debug\libfilesystem.rlib: D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab03\es3\src\lib.rs

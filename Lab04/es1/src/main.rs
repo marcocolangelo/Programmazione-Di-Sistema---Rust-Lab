@@ -1,6 +1,6 @@
 use std::sync::{Arc,Mutex, Condvar};
 
-use es1::{CBState, CBclassic, CBchannel};
+use es1::{CBState, CBclassic, CBchannel, CBthread};
 
 //implementazione classica con stato reso come Mutex e wait_while tramite Condition variable
 fn classic_barrier() {
@@ -49,9 +49,31 @@ fn channel_barrier(){
         t.join().unwrap();
     }
 }
+
+fn master_barrier(){
+    let cbt= Arc::new(CBthread::new(3));
+    let mut vt = Vec::new();
+
+    for i in 0..3{
+        let tbarrier = cbt.clone();
+        vt.push(std::thread::spawn(move || {
+            for k in 0..10{
+                let res = tbarrier.wait(i as usize, i);
+                println!("thread:{} after k:{}", i,  k);
+            }
+        }));
+            
+    }
+
+    for t in vt {
+        t.join().unwrap();
+    }
+
+}
     
 
 fn main(){
     //classic_barrier();
-    channel_barrier();
+    //channel_barrier();
+    master_barrier();
 }
