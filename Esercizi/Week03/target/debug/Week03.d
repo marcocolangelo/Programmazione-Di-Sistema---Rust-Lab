@@ -1,0 +1,1 @@
+D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Esercizi\Week03\target\debug\Week03.exe: D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Esercizi\Week03\main.rs

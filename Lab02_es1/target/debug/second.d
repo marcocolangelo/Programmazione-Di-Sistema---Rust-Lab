@@ -1,1 +1,0 @@
-D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab02\target\debug\second.exe: D:\Desktop\I\ ANNO\ LM\II\ SEMESTRE\Programmazione\ di\ sistema\PS-Rust\Lab\Lab02\src\bin\second.rs
